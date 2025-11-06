@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💰 PumpFun Sniping Platform V2</title>
+    <meta name="description" content="Advanced real-time token sniping platform with live pump.fun integration">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Solana Web3.js -->
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <h1 class="logo">
+                    <i class="fas fa-rocket"></i>
+                    PumpFun Sniping
+                </h1>
+                <span class="version">V2.0</span>
+            </div>
+            
+            <div class="header-center">
+                <div class="balance-display">
+                    <div class="balance-label">Platform Balance</div>
+                    <div class="balance-amount">
+                        <span id="solBalance">Loading...</span>
+                        <span class="currency">SOL</span>
+                    </div>
+                    <div class="balance-usd" id="usdBalance">Loading...</div>
+                </div>
+            </div>
+            
+            <div class="header-right">
+                <button class="btn btn-deposit" onclick="openDepositModal()">
+                    <i class="fas fa-arrow-down"></i>
+                    Deposit
+                </button>
+                <button class="btn btn-withdraw" onclick="openWithdrawModal()">
+                    <i class="fas fa-arrow-up"></i>
+                    Withdraw
+                </button>
+                <button class="btn btn-settings" onclick="openSettingsModal()">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Left Sidebar -->
+        <aside class="sidebar sidebar-left">
+            <!-- Bot Control -->
+            <div class="panel">
+                <h3 class="panel-title">
+                    <i class="fas fa-robot"></i>
+                    Bot Control
+                </h3>
+                <div class="panel-content">
+                    <button id="startStopBtn" class="btn btn-primary btn-large" onclick="toggleBot()">
+                        <i class="fas fa-play"></i>
+                        Start Bot
+                    </button>
+
+                    <div class="status-indicator">
+                        <div class="status-dot" id="botStatus"></div>
+                        <span id="botStatusText">Stopped</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manual Token Input -->
+            <div class="panel">
+                <h3 class="panel-title">
+                    <i class="fas fa-plus-circle"></i>
+                    Add Token Manually
+                </h3>
+                <div class="panel-content">
+                    <div class="input-group">
+                        <input
+                            type="text"
+                            id="manualTokenMint"
+                            class="input-field"
+                            placeholder="Paste token mint address..."
+                            style="width: 100%; margin-bottom: 10px; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); font-size: 13px;"
+                        >
+                        <button class="btn btn-success btn-large" onclick="addManualToken()" style="width: 100%;">
+                            <i class="fas fa-crosshairs"></i>
+                            Add & Snipe Token
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance -->
+            <div class="panel">
+                <h3 class="panel-title">
+                    <i class="fas fa-chart-line"></i>
+                    Performance
+                </h3>
+                <div class="panel-content">
+                    <div class="stat-row">
+                        <span class="stat-label">Total Trades:</span>
+                        <span class="stat-value" id="totalTrades">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Successful:</span>
+                        <span class="stat-value" id="successfulTrades">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Win Rate:</span>
+                        <span class="stat-value" id="winRate">0%</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Total Profit:</span>
+                        <span class="stat-value profit" id="totalProfit">+0.0000 SOL</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Connections -->
+            <div class="panel">
+                <h3 class="panel-title">
+                    <i class="fas fa-plug"></i>
+                    Connections
+                </h3>
+                <div class="panel-content">
+                    <div class="connection-item">
+                        <span>Pump.fun:</span>
+                        <span class="connection-indicator" id="pumpfunStatus">
+                            <i class="fas fa-circle"></i> Connecting...
+                        </span>
+                    </div>
+                    <div class="connection-item">
+                        <span>Backend:</span>
+                        <span class="connection-indicator" id="backendStatus">
+                            <i class="fas fa-circle"></i> Checking...
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Snipe Health -->
+            <div class="panel">
+                <h3 class="panel-title">
+                    <i class="fas fa-stethoscope"></i>
+                    Snipe Health
+                </h3>
+                <div class="panel-content">
+                    <div id="snipeDiagnostics" class="diagnostics-list">
+                        <div class="diagnostic-item">
+                            <i class="fas fa-check-circle" style="color: #10b981;"></i>
+                            <span>System ready</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Feed -->
+            <div class="panel">
+                <h3 class="panel-title">
+                    <i class="fas fa-history"></i>
+                    Activity Feed
+                </h3>
+                <div class="panel-content">
+                    <div id="activityFeed" class="activity-feed">
+                        <div class="activity-item system">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Platform initialized</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Transactions -->
+            <div class="panel">
+                <h3 class="panel-title">
+                    <i class="fas fa-receipt"></i>
+                    Recent Transactions
+                </h3>
+                <div class="panel-content">
+                    <div id="transactionHistory" class="transaction-history">
+                        <div class="empty-state-small">
+                            No transactions yet
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Center - Token Feed -->
+        <section class="main-panel">
+            <div class="panel">
+                <h3 class="panel-title">
+                    <i class="fas fa-fire"></i>
+                    Momentum Token Feed
+                    <span class="token-count" id="tokenCount">0 tokens</span>
+                </h3>
+
+                <!-- Filter and Sort Controls -->
+                <div class="feed-controls">
+                    <div class="filter-group">
+                        <label><i class="fas fa-filter"></i> Filter:</label>
+                        <select id="filterType" class="control-select" onchange="applyFilters()">
+                            <option value="all">All Tokens</option>
+                            <option value="high-momentum">High Momentum (>80)</option>
+                            <option value="medium-momentum">Medium Momentum (50-80)</option>
+                            <option value="low-momentum">Low Momentum (<50)</option>
+                            <option value="manual">Manual Tokens</option>
+                            <option value="telegram">Telegram Tokens</option>
+                            <option value="ready">Ready to Snipe</option>
+                            <option value="sniped">Already Sniped</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label><i class="fas fa-sort"></i> Sort by:</label>
+                        <select id="sortType" class="control-select" onchange="applyFilters()">
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="momentum-high">Momentum (High to Low)</option>
+                            <option value="momentum-low">Momentum (Low to High)</option>
+                            <option value="marketcap-high">Market Cap (High to Low)</option>
+                            <option value="marketcap-low">Market Cap (Low to High)</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <button class="btn btn-secondary btn-sm" onclick="clearFilters()">
+                            <i class="fas fa-redo"></i> Reset
+                        </button>
+                    </div>
+                </div>
+
+                <div class="panel-content">
+                    <div id="tokenFeed" class="token-feed">
+                        <div class="empty-state">
+                            <i class="fas fa-chart-line"></i>
+                            <p>Waiting for momentum tokens...</p>
+                            <small>High momentum tokens with strong bonding curves</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Sidebar - Analytics -->
+        <aside class="sidebar sidebar-right">
+            <!-- AI Chat Assistant -->
+            <div class="panel">
+                <h3 class="panel-title">
+                    <i class="fas fa-robot"></i>
+                    AI Assistant
+                </h3>
+                <div class="panel-content">
+                    <div id="aiChatMessages" class="ai-chat-messages">
+                        <div class="ai-message">
+                            <i class="fas fa-robot"></i>
+                            <p>Hi! I'm your AI trading assistant. Ask me anything about tokens, trading strategies, or the platform!</p>
+                        </div>
+                    </div>
+                    <div class="ai-chat-input">
+                        <input type="text" id="aiChatInput" placeholder="Ask AI anything..." onkeypress="if(event.key==='Enter') sendAIMessage()">
+                        <button onclick="sendAIMessage()" class="btn-ai-send">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Recommendations -->
+            <div class="panel">
+                <h3 class="panel-title">
+                    <i class="fas fa-chart-line"></i>
+                    Top Recommendations
+                </h3>
+                <div class="panel-content">
+                    <div id="aiRecommendations" class="ai-recommendations-list">
+                        <div class="empty-state-compact">
+                            <i class="fas fa-robot"></i>
+                            <p>No AI recommendations yet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Copy Trading -->
+            <div class="panel">
+                <h3 class="panel-title">
+                    <i class="fas fa-users"></i>
+                    Copy Trading
+                    <span class="copy-trading-status" id="copyTradingStatus">●</span>
+                </h3>
+                <div class="panel-content">
+                    <div class="copy-trading-controls">
+                        <button id="copyTradingToggle" class="btn btn-primary btn-sm" onclick="toggleCopyTrading()">
+                            <i class="fas fa-play"></i>
+                            Start Copy Trading
+                        </button>
+                        <button class="btn btn-secondary btn-sm" onclick="openAddWalletModal()">
+                            <i class="fas fa-plus"></i>
+                            Add Wallet
+                        </button>
+                    </div>
+
+                    <div id="trackedWalletsList" class="tracked-wallets-list">
+                        <div class="empty-state-compact">
+                            <i class="fas fa-users"></i>
+                            <p>No wallets tracked</p>
+                            <small>Add successful traders to copy</small>
+                        </div>
+                    </div>
+
+                    <div class="copy-trades-history">
+                        <h4 class="section-subtitle">Recent Copy Trades</h4>
+                        <div id="copyTradesHistory" class="copy-trades-list">
+                            <div class="empty-state-compact">
+                                <i class="fas fa-history"></i>
+                                <p>No copy trades yet</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Positions -->
+            <div class="panel">
+                <h3 class="panel-title">
+                    <i class="fas fa-wallet"></i>
+                    Active Positions
+                </h3>
+                <div class="panel-content">
+                    <div id="activePositions" class="positions-list">
+                        <div class="empty-state-compact">
+                            <i class="fas fa-wallet"></i>
+                            <p>No active positions</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Tokens -->
+            <div class="panel">
+                <h3 class="panel-title">
+                    <i class="fas fa-trophy"></i>
+                    Top Momentum Tokens
+                </h3>
+                <div class="panel-content">
+                    <div id="topTokens" class="top-tokens-list">
+                        <div class="empty-state-compact">
+                            <i class="fas fa-chart-line"></i>
+                            <p>No tokens yet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Snipes -->
+            <div class="panel">
+                <h3 class="panel-title">
+                    <i class="fas fa-history"></i>
+                    Recent Snipes
+                </h3>
+                <div class="panel-content">
+                    <div id="recentSnipes" class="recent-snipes-list">
+                        <div class="empty-state-compact">
+                            <i class="fas fa-crosshairs"></i>
+                            <p>No snipes yet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Market Stats -->
+            <div class="panel">
+                <h3 class="panel-title">
+                    <i class="fas fa-chart-bar"></i>
+                    Market Stats
+                </h3>
+                <div class="panel-content">
+                    <div class="market-stats">
+                        <div class="stat-row">
+                            <span class="stat-label">Avg Momentum:</span>
+                            <span class="stat-value" id="avgMomentum">0%</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Total Market Cap:</span>
+                            <span class="stat-value" id="totalMarketCap">$0</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Total Volume:</span>
+                            <span class="stat-value" id="totalVolume">$0</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Active Tokens:</span>
+                            <span class="stat-value" id="activeTokens">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- Deposit Modal -->
+    <div id="depositModal" class="modal">
+        <div class="modal-overlay" onclick="closeDepositModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>
+                    <i class="fas fa-arrow-down"></i>
+                    Deposit SOL
+                </h2>
+                <button class="modal-close" onclick="closeDepositModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="deposit-address">
+                    <label>Platform Wallet Address:</label>
+                    <div class="address-box">
+                        <code id="depositAddress">EVJDJENSi86ECKr1eFzLBD2ZZNnb8eydA1PfVVNahSCN</code>
+                        <button class="btn-copy" onclick="copyDepositAddress()">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="deposit-qr">
+                    <p>Send SOL to this address to fund your platform balance</p>
+                    <a href="https://solscan.io/account/EVJDJENSi86ECKr1eFzLBD2ZZNnb8eydA1PfVVNahSCN" target="_blank" class="btn btn-secondary">
+                        <i class="fas fa-external-link-alt"></i>
+                        View on Solscan
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Withdraw Modal -->
+    <div id="withdrawModal" class="modal">
+        <div class="modal-overlay" onclick="closeWithdrawModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>
+                    <i class="fas fa-arrow-up"></i>
+                    Withdraw SOL
+                </h2>
+                <button class="modal-close" onclick="closeWithdrawModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Available Balance:</label>
+                    <div class="balance-info">
+                        <span id="withdrawBalance">0.0000 SOL</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Withdrawal Address:</label>
+                    <input type="text" id="withdrawAddress" class="form-input" placeholder="Enter Solana address">
+                </div>
+                <div class="form-group">
+                    <label>Amount (SOL):</label>
+                    <input type="number" id="withdrawAmount" class="form-input" placeholder="0.0000" step="0.0001" min="0">
+                    <button class="btn-max" onclick="setMaxWithdraw()">MAX</button>
+                </div>
+                <button class="btn btn-primary btn-large" onclick="processWithdraw()">
+                    <i class="fas fa-paper-plane"></i>
+                    Withdraw
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-overlay" onclick="closeSettingsModal()"></div>
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>
+                    <i class="fas fa-cog"></i>
+                    Bot Settings
+                </h2>
+                <button class="modal-close" onclick="closeSettingsModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-grid">
+                    <div class="form-group">
+                        <label>Min Trade Amount (SOL):</label>
+                        <input type="number" id="minAmount" class="form-input" value="0.01" step="0.01" min="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Max Trade Amount (SOL):</label>
+                        <input type="number" id="maxAmount" class="form-input" value="0.1" step="0.01" min="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Profit Target (%):</label>
+                        <input type="number" id="profitTarget" class="form-input" value="50" step="5" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Stop Loss (%):</label>
+                        <input type="number" id="stopLoss" class="form-input" value="30" step="5" min="1">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="autoSnipe">
+                        <span>Enable Auto-Snipe (Brand New Tokens - NOT RECOMMENDED)</span>
+                    </label>
+                    <small style="display: block; margin-top: 5px; color: rgba(255,255,255,0.5);">
+                        ⚠️ Old system: Snipes tokens 0-5 seconds old. High risk, low success rate (70%)
+                    </small>
+                </div>
+
+                <!-- Momentum Token Settings -->
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <h3 style="margin-bottom: 15px; color: #10b981;">
+                        <i class="fas fa-chart-line"></i>
+                        Momentum Token Auto-Snipe ⭐ RECOMMENDED
+                    </h3>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="momentumEnabled" checked>
+                            <span>✅ Enable Momentum Auto-Snipe (RECOMMENDED - DEFAULT)</span>
+                        </label>
+                        <small style="display: block; margin-top: 5px; color: rgba(255,255,255,0.7);">
+                            ✅ Snipe tokens with proven momentum & liquidity. Higher success rate (85-90%)
+                        </small>
+                    </div>
+                    <div class="settings-grid">
+                        <div class="form-group">
+                            <label>Min Momentum (%):</label>
+                            <input type="number" id="minMomentum" class="form-input" value="20" step="5" min="5" max="100">
+                            <small style="display: block; margin-top: 5px; color: rgba(255,255,255,0.6);">
+                                Minimum price gain % in last hour
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            <label>Min Volume ($):</label>
+                            <input type="number" id="minVolume" class="form-input" value="30000" step="5000" min="1000">
+                            <small style="display: block; margin-top: 5px; color: rgba(255,255,255,0.6);">
+                                Minimum 24h trading volume
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            <label>Min Liquidity ($):</label>
+                            <input type="number" id="minLiquidity" class="form-input" value="10000" step="1000" min="1000">
+                            <small style="display: block; margin-top: 5px; color: rgba(255,255,255,0.6);">
+                                Minimum liquidity pool size
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Telegram Integration Settings -->
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <h3 style="margin-bottom: 15px; color: #3b82f6;">
+                        <i class="fab fa-telegram"></i>
+                        Telegram Integration 🆕
+                    </h3>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="telegramEnabled">
+                            <span>📱 Enable Telegram Monitoring</span>
+                        </label>
+                        <small style="display: block; margin-top: 5px; color: rgba(255,255,255,0.7);">
+                            Monitor Telegram channels for token signals and auto-snipe
+                        </small>
+                    </div>
+                    <div class="form-group">
+                        <label>Telegram Channels (one per line):</label>
+                        <textarea id="telegramChannels" class="form-input" rows="4" placeholder="@pumpfunalpha&#10;@solanatrending&#10;@dexscreener" style="resize: vertical; font-family: monospace;"></textarea>
+                        <small style="display: block; margin-top: 5px; color: rgba(255,255,255,0.6);">
+                            Enter channel usernames (e.g., @channelname) or IDs
+                        </small>
+                    </div>
+                    <div class="form-group">
+                        <label>Min Telegram Momentum (%):</label>
+                        <input type="number" id="telegramMinMomentum" class="form-input" value="50" step="10" min="10" max="500">
+                        <small style="display: block; margin-top: 5px; color: rgba(255,255,255,0.6);">
+                            Minimum momentum % mentioned in Telegram to trigger snipe
+                        </small>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="telegramAutoSnipe" checked>
+                            <span>⚡ Auto-snipe Telegram Tokens</span>
+                        </label>
+                        <small style="display: block; margin-top: 5px; color: rgba(255,255,255,0.7);">
+                            Automatically snipe tokens detected from Telegram
+                        </small>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary btn-large" onclick="saveSettings()">
+                    <i class="fas fa-save"></i>
+                    Save Settings
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Wallet Modal (Copy Trading) -->
+    <div id="addWalletModal" class="modal">
+        <div class="modal-overlay" onclick="closeAddWalletModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>
+                    <i class="fas fa-user-plus"></i>
+                    Add Wallet to Copy
+                </h2>
+                <button class="modal-close" onclick="closeAddWalletModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Wallet Address:</label>
+                    <input type="text" id="copyWalletAddress" class="form-input" placeholder="Enter Solana wallet address...">
+                    <small>The wallet address of the trader you want to copy</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Nickname:</label>
+                    <input type="text" id="copyWalletNickname" class="form-input" placeholder="e.g., Pro Trader, Whale #1">
+                    <small>A friendly name to identify this trader</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Copy Amount (SOL):</label>
+                    <input type="number" id="copyAmount" class="form-input" value="0.01" step="0.001" min="0.001" max="1">
+                    <small>Fixed amount to use for each copied trade</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Max Trade Size (SOL):</label>
+                    <input type="number" id="copyMaxTrade" class="form-input" value="0.1" step="0.01" min="0.001" max="10">
+                    <small>Maximum SOL per copied trade</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="copyOnlyBuys" checked>
+                        <span>Only copy BUY trades</span>
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="copyBoth">
+                        <span>Copy both BUYS and SELLS</span>
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label>Delay (milliseconds):</label>
+                    <input type="number" id="copyDelay" class="form-input" value="0" step="100" min="0" max="5000">
+                    <small>Delay before copying (0 = instant)</small>
+                </div>
+
+                <button class="btn btn-primary btn-large" onclick="addWalletToCopy()">
+                    <i class="fas fa-plus"></i>
+                    Add Wallet
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="app.js"></script>
+</body>
+</html>
+
